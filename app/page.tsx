@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import AddNoteForm from "./components/AddNoteForm";
 import NoteCard from "./components/NoteCard";
 import EditNoteForm from "./components/EditNoteForm";
@@ -8,6 +8,24 @@ import DeleteConfirmModal from "./components/DeleteConfirmModal";
 import { Note } from "./types/note";
 
 type View = "active" | "favorites" | "trash";
+
+function subscribeToTheme(callback: () => void) {
+  window.addEventListener("storage", callback);
+  window.addEventListener("noteflow-theme-change", callback);
+
+  return () => {
+    window.removeEventListener("storage", callback);
+    window.removeEventListener("noteflow-theme-change", callback);
+  };
+}
+
+function getThemeSnapshot() {
+  return localStorage.getItem("noteflow-theme") === "dark";
+}
+
+function getServerThemeSnapshot() {
+  return false;
+}
 
 export default function Home() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -18,33 +36,24 @@ export default function Home() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
-  const [isDark, setIsDark] = useState(false);
+  const isDark = useSyncExternalStore(
+    subscribeToTheme,
+    getThemeSnapshot,
+    getServerThemeSnapshot
+  );
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "az">("newest");
 
-  // Dark mode
   useEffect(() => {
-    const savedTheme = localStorage.getItem("noteflow-theme");
-
-    if (savedTheme === "dark") {
-      setIsDark(true);
+    if (isDark) {
       document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
     }
-  }, []);
+  }, [isDark]);
 
   function toggleDarkMode() {
-    setIsDark((current) => {
-      const next = !current;
-
-      if (next) {
-        document.documentElement.classList.add("dark");
-        localStorage.setItem("noteflow-theme", "dark");
-      } else {
-        document.documentElement.classList.remove("dark");
-        localStorage.setItem("noteflow-theme", "light");
-      }
-
-      return next;
-    });
+    localStorage.setItem("noteflow-theme", isDark ? "light" : "dark");
+    window.dispatchEvent(new Event("noteflow-theme-change"));
   }
 
   // Fetch notes
@@ -279,27 +288,27 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen px-4 py-6 transition-colors duration-300 sm:px-6 sm:py-10">
-      <div className="mx-auto max-w-6xl">
+    <main className="workspace-shell min-h-screen px-4 py-6 transition-colors duration-300 sm:px-6 sm:py-10">
+      <div className="relative z-10 mx-auto max-w-6xl">
         {/* Header */}
         <header className="animate-fade-in">
-<div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">            <div>
-              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.22em] text-[#E76F51]">
-                <span className="h-2 w-2 rounded-full bg-[#E76F51]" />
-                Personal knowledge space
+<div className="flex flex-col gap-7 sm:flex-row sm:items-end sm:justify-between">            <div>
+              <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.18em] text-[#E06B4F]">
+                <span className="brand-mark">N</span>
+                <span>Personal knowledge space</span>
               </div>
 
               <div className="mt-3 flex flex-wrap items-end gap-3">
-                <h1 className="text-4xl font-bold tracking-[-0.04em] text-[#17202A] dark:text-[#F5F2EB] sm:text-5xl">
+                <h1 className="text-4xl font-bold tracking-[-0.045em] text-[#17252A] dark:text-[#F1F4EF] sm:text-5xl">
                   NoteFlow
                 </h1>
 
-                <span className="mb-1 rounded-full border border-[#D8D4CB] bg-[#FFFDF9] px-3 py-1 text-xs font-semibold text-[#71808A] dark:border-[#354149] dark:bg-[#1B252B] dark:text-[#A7B0B4]">
+                <span className="mb-1 rounded-full border border-[#D9DFDC] bg-white px-3 py-1 text-xs font-semibold text-[#6F7D7D] dark:border-[#304144] dark:bg-[#182528] dark:text-[#9BA9A7]">
                   {notes.length.toString().padStart(2, "0")} notes
                 </span>
               </div>
 
-              <p className="mt-3 max-w-md text-sm leading-6 text-[#71808A] dark:text-[#A7B0B4] sm:text-base">
+              <p className="mt-3 max-w-md text-sm leading-6 text-[#6F7D7D] dark:text-[#9BA9A7] sm:text-base">
                 A quiet place for the thoughts worth keeping.
               </p>
             </div>
@@ -311,7 +320,7 @@ export default function Home() {
   aria-label={
     isDark ? "Switch to light mode" : "Switch to dark mode"
   }
-  className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#D8D4CB] bg-[#FFFDF9] text-lg text-[#52616A] transition-all duration-200 hover:border-[#C9C4B9] hover:bg-[#F1EEE8] dark:border-[#303C43] dark:bg-[#182127] dark:text-[#F4F1EA] dark:hover:bg-[#243139]"
+  className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#D9DFDC] bg-white text-lg text-[#52616A] transition-all duration-200 hover:border-[#B9C7C2] hover:bg-[#EEF3F0] dark:border-[#304144] dark:bg-[#182528] dark:text-[#F1F4EF] dark:hover:bg-[#243638]"
 >
   {isDark ? "☀" : "☾"}
 </button>
@@ -332,7 +341,7 @@ export default function Home() {
         </header>
 
         {/* Navigation */}
-<nav className="mt-8 flex w-full items-center rounded-2xl border border-[#DEDAD1] bg-[#EDE9E1] p-1 dark:border-[#303C43] dark:bg-[#182127] sm:inline-flex sm:p-1.5">
+<nav className="toolbar-surface mt-9 flex w-full items-center p-1.5 sm:inline-flex">
   <button
     onClick={() => setView("active")}
     className={`flex min-w-0 flex-1 items-center justify-center gap-1 rounded-xl px-2 py-2.5 text-xs font-semibold transition-all duration-200 sm:flex-none sm:gap-2 sm:px-4 sm:text-sm ${
@@ -370,7 +379,7 @@ export default function Home() {
 </nav>
 
         {/* Search & Sort */}
-<section className="mt-8 animate-slide-up">
+<section className="toolbar-surface mt-6 animate-slide-up p-4 sm:mt-7 sm:p-5">
   <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
     <label
       htmlFor="note-search"
@@ -409,7 +418,7 @@ export default function Home() {
         placeholder="Search by title or content..."
         value={search}
         onChange={(event) => setSearch(event.target.value)}
-        className="h-14 w-full rounded-xl border border-[#D8D4CB] bg-[#FFFDF9] pl-12 pr-12 text-sm text-[#17202A] shadow-[0_4px_14px_rgba(23,32,42,0.04)] outline-none transition-all duration-200 placeholder:text-[#9BA4A6] focus:border-[#E76F51] focus:shadow-[0_8px_22px_rgba(23,32,42,0.08)] dark:border-[#303C43] dark:bg-[#182127] dark:text-[#F4F1EA] dark:placeholder:text-[#71808A] dark:focus:border-[#E9856D]"
+        className="search-surface h-14 w-full rounded-xl pl-12 pr-12 text-sm text-[#17252A] outline-none transition-all duration-200 placeholder:text-[#9BA4A6] focus:border-[#E06B4F] focus:shadow-[0_8px_22px_rgba(23,37,42,0.08)] dark:text-[#F1F4EF] dark:placeholder:text-[#71808A] dark:focus:border-[#F08A6E]"
       />
 
       {search && (
@@ -464,7 +473,7 @@ export default function Home() {
         {/* Notes */}
         <section className="mt-7">
           {isLoading ? (
-            <div className="grid gap-4 sm:gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="note-grid grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
               {[1, 2, 3].map((item) => (
                 <div
                   key={item}
@@ -473,7 +482,7 @@ export default function Home() {
               ))}
             </div>
           ) : filteredNotes.length > 0 ? (
-            <div className="grid gap-4 sm:gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="note-grid grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
               {filteredNotes.map((note, index) => (
                 <div
                   key={note.id}
@@ -494,7 +503,7 @@ export default function Home() {
               ))}
             </div>
           ) : (
-            <div className="animate-slide-up rounded-2xl border border-dashed border-[#CEC9BF] bg-[#FFFDF9] px-6 py-16 text-center shadow-[0_8px_24px_rgba(23,32,42,0.04)] dark:border-[#354149] dark:bg-[#1B252B]">
+            <div className="empty-state animate-slide-up rounded-2xl px-6 py-16 text-center shadow-[0_8px_24px_rgba(23,37,42,0.04)]">
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#F9DDD4] text-2xl text-[#C9543A] dark:bg-[#4A302C] dark:text-[#E9856D]">
                 {view === "favorites"
                   ? "★"

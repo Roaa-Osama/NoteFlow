@@ -84,3 +84,4 @@ noteflow/
 ## 📸 Some Screenshots
 
 ![alt text](<Screenshot (661).png>) ![alt text](<Screenshot (662).png>) ![alt text](<Screenshot (663).png>) ![alt text](<Screenshot (664).png>) ![alt text](<Screenshot (665).png>) ![alt text](<Screenshot (666).png>)
+![alt text](<Screenshot (671).png>) ![alt text](<Screenshot (667).png>) ![alt text](<Screenshot (668).png>) ![alt text](<Screenshot (669).png>) ![alt text](<Screenshot (670).png>)
