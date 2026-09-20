@@ -82,5 +82,4 @@ noteflow/
 4. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## 📸 Some Screenshots
-
-![alt text](<Screenshot (661).png>) ![alt text](<Screenshot (662).png>) ![alt text](<Screenshot (663).png>) ![alt text](<Screenshot (664).png>) ![alt text](<Screenshot (665).png>) ![alt text](<Screenshot (666).png>)
+ ![alt text](<Screenshot (665).png>) ![alt text](<Screenshot (666).png>)
