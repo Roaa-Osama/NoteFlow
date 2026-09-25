@@ -5,9 +5,16 @@ import AddNoteForm from "./components/AddNoteForm";
 import NoteCard from "./components/NoteCard";
 import EditNoteForm from "./components/EditNoteForm";
 import DeleteConfirmModal from "./components/DeleteConfirmModal";
+import WelcomeLanding from "./components/WelcomeLanding";
+import LoadingScreen from "./components/LoadingScreen";
+import BrandMark from "./components/BrandMark";
 import { Note } from "./types/note";
 
 type View = "active" | "favorites" | "trash";
+type ScreenMode = "workspace" | "welcome" | "loader-auto" | "resolving";
+const currentViewStorageKey = "noteflow-current-view";
+let navigatedInCurrentDocument = false;
+let loaderReplayedInCurrentDocument = false;
 
 function subscribeToTheme(callback: () => void) {
   window.addEventListener("storage", callback);
@@ -27,7 +34,63 @@ function getServerThemeSnapshot() {
   return false;
 }
 
+function subscribeToView(callback: () => void) {
+  function handlePopState(event: PopStateEvent) {
+    navigatedInCurrentDocument = true;
+    const screenMode: ScreenMode =
+      event.state?.noteflowView === "workspace"
+        ? "workspace"
+        : "welcome";
+    sessionStorage.setItem(currentViewStorageKey, screenMode);
+    callback();
+  }
+
+  window.addEventListener("popstate", handlePopState);
+  window.addEventListener("noteflow-view-change", callback);
+
+  return () => {
+    window.removeEventListener("popstate", handlePopState);
+    window.removeEventListener("noteflow-view-change", callback);
+  };
+}
+
+function getViewSnapshot(): ScreenMode {
+  const screenMode = sessionStorage.getItem(currentViewStorageKey);
+
+  const navigationEntry = performance.getEntriesByType(
+    "navigation"
+  )[0] as PerformanceNavigationTiming | undefined;
+  const shouldReplayLoader =
+    screenMode === "welcome" &&
+    navigationEntry?.type === "reload" &&
+    !navigatedInCurrentDocument &&
+    !loaderReplayedInCurrentDocument;
+
+  if (shouldReplayLoader) {
+    return "loader-auto";
+  }
+
+  if (
+    screenMode === "workspace" ||
+    screenMode === "welcome"
+  ) {
+    return screenMode;
+  }
+
+  return "loader-auto";
+}
+
+function getServerViewSnapshot(): ScreenMode {
+  return "resolving";
+}
+
 export default function Home() {
+  const screenMode = useSyncExternalStore(
+    subscribeToView,
+    getViewSnapshot,
+    getServerViewSnapshot
+  );
+  const showWelcome = screenMode === "welcome";
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [view, setView] = useState<View>("active");
@@ -51,9 +114,50 @@ export default function Home() {
     }
   }, [isDark]);
 
+  useEffect(() => {
+    if (screenMode === "resolving") {
+      return;
+    }
+
+    const noteflowView =
+      screenMode === "workspace"
+        ? "workspace"
+        : screenMode === "welcome"
+          ? "welcome"
+          : "loader";
+
+    sessionStorage.setItem(currentViewStorageKey, screenMode);
+    window.history.replaceState(
+      { ...window.history.state, noteflowView },
+      "",
+      window.location.href
+    );
+  }, [screenMode]);
+
   function toggleDarkMode() {
     localStorage.setItem("noteflow-theme", isDark ? "light" : "dark");
     window.dispatchEvent(new Event("noteflow-theme-change"));
+  }
+
+  function enterWelcome() {
+    loaderReplayedInCurrentDocument = true;
+    sessionStorage.setItem(currentViewStorageKey, "welcome");
+    window.history.replaceState(
+      { ...window.history.state, noteflowView: "welcome" },
+      "",
+      window.location.href
+    );
+    window.dispatchEvent(new Event("noteflow-view-change"));
+  }
+
+  function enterWorkspace() {
+    sessionStorage.setItem(currentViewStorageKey, "workspace");
+    window.history.pushState(
+      { ...window.history.state, noteflowView: "workspace" },
+      "",
+      window.location.href
+    );
+    window.dispatchEvent(new Event("noteflow-view-change"));
   }
 
   // Fetch notes
@@ -287,6 +391,29 @@ export default function Home() {
     trash: "Trash",
   };
 
+  if (screenMode === "loader-auto") {
+    return (
+      <LoadingScreen
+        autoAdvance
+        onComplete={enterWelcome}
+      />
+    );
+  }
+
+  if (screenMode === "resolving") {
+    return <main className="screen-resolving" aria-busy="true" />;
+  }
+
+  if (showWelcome) {
+    return (
+      <WelcomeLanding
+        isDark={isDark}
+        onToggleTheme={toggleDarkMode}
+        onEnter={enterWorkspace}
+      />
+    );
+  }
+
   return (
     <main className="workspace-shell min-h-screen px-4 py-6 transition-colors duration-300 sm:px-6 sm:py-10">
       <div className="relative z-10 mx-auto max-w-6xl">
@@ -294,7 +421,7 @@ export default function Home() {
         <header className="animate-fade-in">
 <div className="flex flex-col gap-7 sm:flex-row sm:items-end sm:justify-between">            <div>
               <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.18em] text-[#E06B4F]">
-                <span className="brand-mark">N</span>
+                <BrandMark />
                 <span>Personal knowledge space</span>
               </div>
 

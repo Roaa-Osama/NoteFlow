@@ -81,6 +81,8 @@ noteflow/
 
 4. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
+## 🎥 Video Project
+<video controls src="Video Project 1.mp4" title="video"></video>
+
 ## 📸 Some Screenshots
- ![alt text](<Screenshot (665).png>) ![alt text](<Screenshot (666).png>)
- ![alt text](<Screenshot (671)-1.png>) ![alt text](<Screenshot (667)-1.png>) ![alt text](<Screenshot (668)-1.png>) ![alt text](<Screenshot (669)-1.png>) ![alt text](<Screenshot (670)-1.png>)
+![alt text](<Screenshot (693).png>) ![alt text](<Screenshot (694).png>) ![alt text](<Screenshot (695).png>) ![alt text](<Screenshot (696).png>) ![alt text](<Screenshot (697).png>) ![alt text](<Screenshot (698).png>) ![alt text](<Screenshot (689).png>) ![alt text](<Screenshot (691).png>) ![alt text](<Screenshot (692).png>)
